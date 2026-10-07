@@ -1,7 +1,5 @@
 name: Build and publish RetroBox APK
 on:
-  push:
-    branches: [main, master]
   workflow_dispatch:
 permissions:
   contents: write
@@ -12,16 +10,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-      - name: Install Gradle 8.9
-        run: curl -fsSL https://services.gradle.org/distributions/gradle-8.9-bin.zip -o /tmp/gradle.zip && sudo unzip -q /tmp/gradle.zip -d /opt && echo "/opt/gradle-8.9/bin" >> "$GITHUB_PATH"
-      - name: Accept Android SDK licenses
-        run: 'yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses'
-      - name: Install Android platform
-        run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install Android platform packages
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
       - name: Extract Android project
         run: unzip -q retrobox-android-github.zip -d source
       - name: Build debug APK
@@ -30,11 +29,11 @@ jobs:
       - name: Publish APK as GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.0
-          name: RetroBox v0.1.0
+          tag_name: v0.1.1
+          name: RetroBox v0.1.1
           body: |
-            Debug APK of RetroBox.
-            Includes offline CHIP-8. SNES core is not integrated yet.
-            ROMs are not included.
+            Candidate test build with a simplified startup screen and startup diagnostics.
+            CHIP-8 offline prototype only; the SNES core is not integrated. No ROMs are included.
+            This build has not been confirmed on the user's device.
           files: source/retrobox-android/app/build/outputs/apk/debug/app-debug.apk
           fail_on_unmatched_files: true
