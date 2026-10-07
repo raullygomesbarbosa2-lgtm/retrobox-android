@@ -16,6 +16,8 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Install Gradle 8.9
+        run: curl -fsSL https://services.gradle.org/distributions/gradle-8.9-bin.zip -o /tmp/gradle.zip && sudo unzip -q /tmp/gradle.zip -d /opt && echo "/opt/gradle-8.9/bin" >> "$GITHUB_PATH"
       - name: Accept Android SDK licenses
         run: 'yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses'
       - name: Install Android platform
@@ -24,7 +26,7 @@ jobs:
         run: unzip -q retrobox-android-github.zip -d source
       - name: Build debug APK
         working-directory: source/retrobox-android
-        run: chmod +x ./gradlew && ./gradlew --no-daemon assembleDebug
+        run: gradle --no-daemon assembleDebug
       - name: Publish APK as GitHub Release
         uses: softprops/action-gh-release@v2
         with:
