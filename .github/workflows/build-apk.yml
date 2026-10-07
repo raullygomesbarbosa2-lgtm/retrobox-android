@@ -1,5 +1,7 @@
 name: Build and publish RetroBox APK
 on:
+  push:
+    branches: [ main, master ]
   workflow_dispatch:
 permissions:
   contents: write
@@ -18,10 +20,10 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-      - name: Install Android platform packages
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Accept SDK licenses
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+      - name: Install Android platform
+        run: "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-35' 'build-tools;35.0.0'
       - name: Extract Android project
         run: unzip -q retrobox-android-github.zip -d source
       - name: Build debug APK
@@ -33,8 +35,8 @@ jobs:
           tag_name: v0.1.1
           name: RetroBox v0.1.1
           body: |
-            Candidate test build with a simplified startup screen and startup diagnostics.
-            CHIP-8 offline prototype only; the SNES core is not integrated. No ROMs are included.
-            This build has not been confirmed on the user's device.
+            APK de teste RetroBox 0.1.1.
+            Inclui CHIP-8 offline. O núcleo SNES ainda não está integrado.
+            Não inclui ROMs. Inicialização simplificada para diagnóstico.
           files: source/retrobox-android/app/build/outputs/apk/debug/app-debug.apk
           fail_on_unmatched_files: true
