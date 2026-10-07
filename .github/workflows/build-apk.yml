@@ -1,7 +1,5 @@
-name: Build and publish RetroBox APK
+name: Build and publish Nébula Retro APK
 on:
-  push:
-    branches: [main, master]
   workflow_dispatch:
 permissions:
   contents: write
@@ -32,11 +30,12 @@ jobs:
       - name: Publish APK as GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.1
-          name: RetroBox v0.1.1
+          tag_name: v0.1.2
+          name: Nébula Retro v0.1.2
           body: |
-            APK de teste RetroBox 0.1.1.
-            Inclui CHIP-8 offline. O núcleo SNES ainda não está integrado.
-            Não inclui ROMs. Inicialização simplificada para diagnóstico.
+            APK de teste Nébula Retro 0.1.2.
+            Inclui CHIP-8 offline; não inclui ROMs.
+            PSP e PS1 ainda não estão integrados.
+            Inclui diagnóstico adicional de falhas na inicialização.
           files: source/retrobox-android/app/build/outputs/apk/debug/app-debug.apk
           fail_on_unmatched_files: true
