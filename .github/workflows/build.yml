@@ -19,11 +19,16 @@ jobs:
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+      - name: Extract Nébula 16 source
+        run: |
+          mkdir -p build-source
+          unzip -q Nebula-16-source-v0.1.0.zip -d build-source
       - name: Test and build APK
+        working-directory: build-source/nebula-16
         run: gradle --no-daemon :chip8-core:test :snes-core:test :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
           name: nebula-16-preview-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: build-source/nebula-16/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
