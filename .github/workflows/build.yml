@@ -1,12 +1,19 @@
-name: Build Nébula 16
+name: Verify Nébula 16 development build
 on:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish a prerelease APK
+        required: false
+        type: boolean
+        default: false
   push:
-    branches: [main, master]
+    paths:
+      - 'Nebula-16-source-v0.1.2-dev.zip'
+permissions:
+  contents: write
 jobs:
   build:
-    permissions:
-      contents: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,24 +31,22 @@ jobs:
       - name: Extract Nébula 16 source
         run: |
           mkdir -p build-source
-          unzip -q Nebula-16-source-v0.1.1.zip -d build-source
-      - name: Test and build APK
+          unzip -q Nebula-16-source-v0.1.2-dev.zip -d build-source
+      - name: Test and compile
         working-directory: build-source/nebula-16
         run: gradle --no-daemon :chip8-core:test :snes-core:test :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: nebula-16-preview-apk
+          name: nebula-16-dev-apk
           path: build-source/nebula-16/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
-      - name: Publish APK release
+      - name: Publish prerelease only when requested
+        if: ${{ inputs.publish == true }}
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: nebula-16-preview-v0.1.1
-          name: Nébula 16 0.1.1 — APK de prévia
-          body: |
-            APK de prévia do projeto Nébula 16.
-            CHIP-8 jogável; SNES é apenas protótipo técnico e ainda não roda jogos.
+          tag_name: nebula-16-preview-v0.1.2
+          name: Nébula 16 0.1.2 — APK de desenvolvimento
           prerelease: true
           make_latest: false
           files: build-source/nebula-16/app/build/outputs/apk/debug/app-debug.apk
