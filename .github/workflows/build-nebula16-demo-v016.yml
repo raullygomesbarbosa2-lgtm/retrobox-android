@@ -1,0 +1,56 @@
+name: Build Nébula 16 Demo APK v0.1.6
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publicar esta versão como pré-lançamento
+        required: false
+        type: boolean
+        default: true
+  push:
+    paths:
+      - 'Nebula-16-source-v0.1.6-demo.zip'
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - uses: android-actions/setup-android@v3
+      - name: Instalar pacotes Android
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Extrair fonte
+        run: |
+          mkdir -p build-source
+          unzip -q Nebula-16-source-v0.1.6-demo.zip -d build-source
+      - name: Testar todos os núcleos e compilar APK
+        working-directory: build-source/nebula-16
+        run: gradle --no-daemon :chip8-core:test :nes-core:test :snes-core:test :app:assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nebula-16-demo-v0.1.6-apk
+          path: build-source/nebula-16/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publicar APK prerelease
+        if: ${{ github.event_name == 'push' || inputs.publish == true }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nebula-16-demo-v0.1.6
+          name: Nébula 16 Demo v0.1.6 — NES NROM preview
+          body: |
+            Pré-lançamento de teste. Sistemas executáveis declarados: CHIP-8 e suporte inicial NES iNES mapper 0/NROM; SNES segue experimental. Os 50 itens não estão todos emulados.
+            O núcleo NES é original, parcial e não ciclo-preciso: sem sprites/scroll/APU/DMA/NMI e com suporte limitado a opcodes 6502 e PPU. ROMs comerciais podem não funcionar. Nenhuma ROM é incluída.
+          prerelease: true
+          make_latest: false
+          files: build-source/nebula-16/app/build/outputs/apk/debug/app-debug.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
