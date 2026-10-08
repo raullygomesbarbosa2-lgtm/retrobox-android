@@ -1,59 +1,95 @@
-name: Build Nébula Retro 0.1.3
+name: Build and publish Nébula Retro 0.1.3
+
 on:
   workflow_dispatch:
 permissions:
   contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout project archive
+      - name: Checkout app repository
         uses: actions/checkout@v4
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.10.2'
-      - name: Accept Android SDK licenses
-        run: 'yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true'
-      - name: Install Android SDK
-        run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;34.0.0"'
-      - name: Extract Nébula Retro project
+
+      - name: Extract customized Android source
         run: unzip -q retrobox-android-github.zip -d source
-      - name: Fetch pinned Libretro cores
+
+      - name: Fetch pinned LemuroidCores revision
+        uses: actions/checkout@v4
+        with:
+          repository: Swordfish90/LemuroidCores
+          ref: fee2e824525daa22bcf318f96127fe43fa8a15ad
+          path: source/nebula-retro/lemuroid-cores
+
+      - name: Stage PS1 and PSP cores for all published Android ABIs
+        working-directory: source/nebula-retro
+        shell: bash
         run: |
-          project=source/retrobox-android
-          core_dir="$project/lemuroid-cores"
-          commit=$(cat "$project/LEMUROID_CORES_COMMIT.txt")
-          git init "$core_dir"
-          git -C "$core_dir" remote add origin https://github.com/Swordfish90/LemuroidCores.git
-          git -C "$core_dir" fetch --depth=1 origin "$commit"
-          git -C "$core_dir" checkout --detach FETCH_HEAD
-      - name: Keep only PSP and PS1 core binaries
+          set -euo pipefail
+          cores="$PWD/lemuroid-cores"
+          dest="$PWD/lemuroid-app/src/main/jniLibs"
+          for abi in arm64-v8a armeabi-v7a x86 x86_64; do
+            for core in pcsx_rearmed ppsspp; do
+              file="lib${core}_libretro_android.so"
+              src="$cores/lemuroid_core_${core}/src/main/jniLibs/$abi/$file"
+              test -s "$src" || { echo "Missing required core: $src" >&2; exit 1; }
+              mkdir -p "$dest/$abi"
+              cp "$src" "$dest/$abi/$file"
+            done
+          done
+          echo 'Staged both Libretro cores for all four Android ABIs.'
+
+      - name: Build free bundled APK
+        working-directory: source/nebula-retro
+        run: ./gradlew --no-daemon --stacktrace assembleFreeBundleDebug
+
+      - name: Verify APK contains both native cores for all ABIs
+        shell: bash
         run: |
-          find source/retrobox-android/lemuroid-cores/bundled-cores/src/main/jniLibs -type f -name '*_libretro_android.so' \
-            ! -name 'libpcsx_rearmed_libretro_android.so' \
-            ! -name 'libppsspp_libretro_android.so' -delete
-      - name: Build bundled PSP and PS1 APK
-        working-directory: source/retrobox-android
-        run: |
-          chmod +x gradlew
-          ./gradlew --no-daemon :lemuroid-app:assembleFreeBundleDebug
-          test -s lemuroid-app/build/outputs/apk/freeBundle/debug/lemuroid-app-free-bundle-debug.apk
-      - name: Publish APK v0.1.3
+          set -euo pipefail
+          apk="source/nebula-retro/lemuroid-app/build/outputs/apk/free/bundle/debug/lemuroid-app-free-bundle-debug.apk"
+          test -s "$apk"
+          for abi in arm64-v8a armeabi-v7a x86 x86_64; do
+            unzip -Z1 "$apk" | grep -Fx "lib/$abi/libpcsx_rearmed_libretro_android.so"
+            unzip -Z1 "$apk" | grep -Fx "lib/$abi/libppsspp_libretro_android.so"
+          done
+          mkdir -p release
+          cp "$apk" release/Nebula-Retro-v0.1.3.apk
+          cp retrobox-android-github.zip release/Nebula-Retro-source-v0.1.3.zip
+          sha256sum release/Nebula-Retro-v0.1.3.apk | tee release/SHA256SUMS.txt
+
+      - name: Upload verified APK and source as run artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nebula-retro-v0.1.3
+          path: release/*
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Publish verified v0.1.3 GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v0.1.3
-          name: Nébula Retro v0.1.3
+          name: Nébula Retro v0.1.3 (PS1 + PSP)
           body: |
-            Nébula Retro 0.1.3 — PSP + PlayStation (PS1), without bundled BIOS or games.
-            PSP via PPSSPP HLE; PS1 via PCSX-ReARMed HLE when no BIOS is supplied (compatibility may vary).
-            Touch controls and landscape gameplay are provided by the Lemuroid frontend.
-            Performance depends on device and game; 30 FPS is not guaranteed on every phone.
-            This GPLv3-derived build includes source and third-party notices in the public repository.
-          files: source/retrobox-android/lemuroid-app/build/outputs/apk/freeBundle/debug/lemuroid-app-free-bundle-debug.apk
+            Nébula Retro 0.1.3 is a customized Lemuroid-based Android frontend for PS1 (PCSX-ReARMed) and PSP (PPSSPP).
+
+            Includes both native cores for arm64-v8a, armeabi-v7a, x86 and x86_64. No games or BIOS files are included. PSP uses HLE without an external BIOS. PS1 can use HLE without a BIOS, but some games may have compatibility limitations.
+
+            Put ambiguous ISO/PBP files in separate PSX and PSP folders (the full folder path must contain `psx` or `psp`) so the library chooses the corresponding core. For game formats and setup, see the included source archive's README-NEBULA.md.
+
+            Source and attribution: [Lemuroid](https://github.com/Swordfish90/Lemuroid), GPL-3.0-or-later; native core sources and notices: [LemuroidCores](https://github.com/Swordfish90/LemuroidCores), pinned to `fee2e824525daa22bcf318f96127fe43fa8a15ad`. The build contains only PCSX-ReARMed and PPSSPP native libraries.
+
+            Performance depends on the device and game. The APK has not been gameplay-tested on the user's phone, and smooth performance or a specific frame rate is not guaranteed.
+          files: |
+            release/Nebula-Retro-v0.1.3.apk
+            release/Nebula-Retro-source-v0.1.3.zip
+            release/SHA256SUMS.txt
           fail_on_unmatched_files: true
