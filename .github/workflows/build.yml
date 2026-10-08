@@ -22,7 +22,7 @@ jobs:
       - name: Extract Nébula 16 source
         run: |
           mkdir -p build-source
-          unzip -q Nebula-16-source-v0.1.0.zip -d build-source
+          unzip -q Nebula-16-source-v0.1.1.zip -d build-source
       - name: Test and build APK
         working-directory: build-source/nebula-16
         run: gradle --no-daemon :chip8-core:test :snes-core:test :app:assembleDebug
