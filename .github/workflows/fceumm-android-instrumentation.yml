@@ -46,12 +46,19 @@ jobs:
           TOOLCHAIN="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
           CORE=third_party/libretro-fceumm
           python3 tests/make_homebrew_nrom.py "$RUNNER_TEMP/nebula-homebrew.nes"
-          make -C "$CORE" -f Makefile.libretro clean
-          CC="$TOOLCHAIN/x86_64-linux-android23-clang"
-          make -C "$CORE" -f Makefile.libretro platform=unix HAVE_HDPACK=0 \
-            CC="$CC" LD="$CC" AR="$TOOLCHAIN/llvm-ar"
-          mkdir -p app/src/main/jniLibs/x86_64 app/src/androidTest/assets
-          cp "$CORE/fceumm_libretro.so" app/src/main/jniLibs/x86_64/libfceumm_libretro.so
+          for ABI in arm64-v8a armeabi-v7a x86_64; do
+            make -C "$CORE" -f Makefile.libretro clean
+            case "$ABI" in
+              arm64-v8a) CC="$TOOLCHAIN/aarch64-linux-android23-clang" ;;
+              armeabi-v7a) CC="$TOOLCHAIN/armv7a-linux-androideabi23-clang" ;;
+              x86_64) CC="$TOOLCHAIN/x86_64-linux-android23-clang" ;;
+            esac
+            make -C "$CORE" -f Makefile.libretro platform=unix HAVE_HDPACK=0 \
+              CC="$CC" LD="$CC" AR="$TOOLCHAIN/llvm-ar"
+            mkdir -p "app/src/main/jniLibs/$ABI"
+            cp "$CORE/fceumm_libretro.so" "app/src/main/jniLibs/$ABI/libfceumm_libretro.so"
+          done
+          mkdir -p app/src/androidTest/assets
           cp "$RUNNER_TEMP/nebula-homebrew.nes" app/src/androidTest/assets/homebrew.nes
       - name: Assemble app and instrumentation APKs
         working-directory: ${{ runner.temp }}/source/nebula-16
