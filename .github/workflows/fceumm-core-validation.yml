@@ -16,8 +16,9 @@ jobs:
       - name: Unpack corresponding source bundle
         run: |
           set -euo pipefail
-          test -s Nebula-16-FCEUmm-validation-source.zip
-          unzip -q Nebula-16-FCEUmm-validation-source.zip -d "$RUNNER_TEMP/source"
+          mkdir -p "$RUNNER_TEMP/source"
+          test -s Nebula-16-FCEUmm-validation-source.tar.gz
+          tar -xzf Nebula-16-FCEUmm-validation-source.tar.gz -C "$RUNNER_TEMP/source"
           test -f "$RUNNER_TEMP/source/nebula-16/third_party/libretro-fceumm/LICENSE-GPL-2.0.txt"
           test -f "$RUNNER_TEMP/source/nebula-16/third_party/libretro-fceumm/UPSTREAM.md"
           test -f "$RUNNER_TEMP/source/nebula-16/app/src/main/assets/licenses/fceumm/COPYING"
@@ -78,7 +79,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/validation-artifact"
           cp "$APK" "$RUNNER_TEMP/validation-artifact/Nebula-16-FCEUmm-validation-only.apk"
           cp "$RUNNER_TEMP/host-smoke.log" "$RUNNER_TEMP/validation-artifact/host-smoke.log"
-          cp "$GITHUB_WORKSPACE/Nebula-16-FCEUmm-validation-source.zip" "$RUNNER_TEMP/validation-artifact/"
+          cp "$GITHUB_WORKSPACE/Nebula-16-FCEUmm-validation-source.tar.gz" "$RUNNER_TEMP/validation-artifact/"
           sha256sum "$RUNNER_TEMP/validation-artifact"/* > "$RUNNER_TEMP/validation-artifact/SHA256SUMS.txt"
       - uses: actions/upload-artifact@v4
         with:
