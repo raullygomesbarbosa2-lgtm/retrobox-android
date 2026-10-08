@@ -24,7 +24,7 @@ jobs:
         run: |
           mkdir -p preview
           unzip -q Nebula-Zero-PS1-PSP-preview.zip -d preview
-          test -f preview/Nebula-Zero/settings.gradle.kts
+          test -f preview/nebula-zero/settings.gradle.kts
       - name: Run both core test suites
-        working-directory: preview/Nebula-Zero
+        working-directory: preview/nebula-zero
         run: gradle --no-daemon :psx-core:test :psp-core:test
