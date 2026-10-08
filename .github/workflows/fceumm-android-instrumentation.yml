@@ -37,7 +37,7 @@ jobs:
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
             'platforms;android-35' 'build-tools;35.0.0' \
             "ndk;${ANDROID_NDK_VERSION}" 'cmake;3.22.1' \
-            'system-images;android-35;google_apis;x86_64'
+            'system-images;android-34;google_apis;x86_64'
       - name: Build pinned FCEUmm and generated homebrew fixture for Android
         working-directory: ${{ runner.temp }}/source/nebula-16
         run: |
@@ -63,16 +63,24 @@ jobs:
       - name: Assemble app and instrumentation APKs
         working-directory: ${{ runner.temp }}/source/nebula-16
         run: gradle --no-daemon :rom-import:test :chip8-core:test :nes-core:test :snes-core:test :app:assembleDebug :app:assembleDebugAndroidTest
-      - name: Exercise app JNI, Activity route, and rendered NES frame on emulator
+      - name: Exercise app JNI, Activity route, and rendered NES frame on API 34 emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 34
           target: google_apis
           arch: x86_64
           profile: pixel_2
-          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect
           disable-animations: true
-          script: cd "$RUNNER_TEMP/source/nebula-16" && gradle --no-daemon :app:connectedDebugAndroidTest
+          script: |
+            cd "$RUNNER_TEMP/source/nebula-16"
+            set +e
+            gradle --no-daemon :app:connectedDebugAndroidTest
+            TEST_STATUS=$?
+            adb devices -l > "$RUNNER_TEMP/android-emulator-devices.txt" 2>&1
+            adb shell getprop > "$RUNNER_TEMP/android-emulator-properties.txt" 2>&1
+            adb logcat -d -v threadtime > "$RUNNER_TEMP/android-instrumentation-logcat.txt" 2>&1
+            exit "$TEST_STATUS"
       - name: Collect validation-only evidence
         if: always()
         working-directory: ${{ runner.temp }}/source/nebula-16
@@ -83,6 +91,9 @@ jobs:
           cp "$GITHUB_WORKSPACE/Nebula-16-FCEUmm-validation-source-r3.tar.gz" "$OUT/"
           cp -R app/build/outputs/androidTest-results "$OUT/" 2>/dev/null || true
           cp -R app/build/reports/androidTests "$OUT/" 2>/dev/null || true
+          for FILE in android-emulator-devices.txt android-emulator-properties.txt android-instrumentation-logcat.txt; do
+            cp "$RUNNER_TEMP/$FILE" "$OUT/" 2>/dev/null || true
+          done
           APK=app/build/outputs/apk/debug/app-debug.apk
           if [ -s "$APK" ]; then
             unzip -l "$APK" | grep 'lib/x86_64/libfceumm_libretro.so' > "$OUT/apk-x86_64-core-check.txt"
