@@ -1,0 +1,39 @@
+name: Build Nébula Zero Android preview
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Nebula-Zero-PS1-PSP-preview.zip'
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Install Android SDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+      - name: Extract preview source
+        run: |
+          mkdir -p preview
+          unzip -q Nebula-Zero-PS1-PSP-preview.zip -d preview
+          test -f preview/nebula-zero/app/build.gradle.kts
+      - name: Run tests and build the APK
+        working-directory: preview/nebula-zero
+        run: gradle --no-daemon :psx-core:test :psp-core:test :app:assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nebula-zero-android-preview
+          path: preview/nebula-zero/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
