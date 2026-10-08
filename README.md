@@ -4,9 +4,11 @@ Frontend Android próprio, com telas e fluxo de biblioteca originais em Kotlin. 
 
 ## Baixar
 
-- [Lançamento Nébula Retro v0.2.0](https://github.com/raullygomesbarbosa2-lgtm/retrobox-android/releases/tag/v0.2.0)
-- [Baixar APK v0.2.0 diretamente](https://github.com/raullygomesbarbosa2-lgtm/retrobox-android/releases/download/v0.2.0/Nebula-Retro-v0.2.0.apk)
-- [Código-fonte do frontend](https://github.com/raullygomesbarbosa2-lgtm/retrobox-android/releases/download/v0.2.0/Nebula-Retro-source-v0.2.0.zip)
+- [Lançamento Nébula Retro v0.2.1](https://github.com/raullygomesbarbosa2-lgtm/retrobox-android/releases/tag/v0.2.1)
+- [Baixar APK v0.2.1 diretamente](https://github.com/raullygomesbarbosa2-lgtm/retrobox-android/releases/download/v0.2.1/Nebula-Retro-v0.2.1.apk)
+- [Código-fonte v0.2.1](https://github.com/raullygomesbarbosa2-lgtm/retrobox-android/releases/download/v0.2.1/Nebula-Retro-source-v0.2.1.zip)
+
+A versão 0.2.1 corrige o caminho virtual dos arquivos de jogo informado ao LibretroDroid. A compilação e os arquivos do APK foram verificados pelo GitHub Actions; instalação e gameplay ainda não foram testados em aparelho físico.
 
 ## Como usar
 
