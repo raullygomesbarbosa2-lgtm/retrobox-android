@@ -5,6 +5,8 @@ on:
     branches: [main, master]
 jobs:
   build:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,3 +34,16 @@ jobs:
           path: build-source/nebula-16/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
+      - name: Publish APK release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nebula-16-preview-v0.1.1
+          name: Nébula 16 0.1.1 — APK de prévia
+          body: |
+            APK de prévia do projeto Nébula 16.
+            CHIP-8 jogável; SNES é apenas protótipo técnico e ainda não roda jogos.
+          prerelease: true
+          make_latest: false
+          files: build-source/nebula-16/app/build/outputs/apk/debug/app-debug.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
