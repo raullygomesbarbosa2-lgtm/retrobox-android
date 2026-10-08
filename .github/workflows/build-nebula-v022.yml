@@ -1,0 +1,108 @@
+name: Build and publish Nébula Retro v0.2.2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/build-nebula-v022.yml'
+      - 'nebula-native-source-v022.zip'
+  workflow_dispatch:
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Install Android SDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+      - name: Extract original Nébula Retro project
+        run: |
+          mkdir source
+          unzip -q nebula-native-source-v022.zip -d source
+          grep -F 'val virtualFolder = "/virtual/file/path"' source/app/src/main/java/com/raully/nebularetro/GameActivity.kt
+          grep -F 'IMPORTAR BIOS DO MEU PS1' source/app/src/main/java/com/raully/nebularetro/MainActivity.kt
+      - name: Fetch pinned core binaries
+        run: |
+          set -euo pipefail
+          core_dir="$RUNNER_TEMP/lemuroid-cores"
+          commit='fee2e824525daa22bcf318f96127fe43fa8a15ad'
+          git clone --filter=blob:none --no-checkout https://github.com/Swordfish90/LemuroidCores.git "$core_dir"
+          git -C "$core_dir" fetch --depth=1 origin "$commit"
+          git -C "$core_dir" checkout --detach FETCH_HEAD
+          test "$(git -C "$core_dir" rev-parse HEAD)" = "$commit"
+          dest="$GITHUB_WORKSPACE/source/app/src/main/jniLibs"
+          for abi in arm64-v8a armeabi-v7a x86; do
+            for core in pcsx_rearmed ppsspp; do
+              file="lib${core}_libretro_android.so"
+              src="$core_dir/bundled-cores/src/main/jniLibs/$abi/$file"
+              test -s "$src"
+              mkdir -p "$dest/$abi"
+              cp "$src" "$dest/$abi/$file"
+            done
+          done
+          test "$(find "$dest" -type f -name '*_libretro_android.so' | wc -l)" -eq 6
+      - name: Build release APK
+        working-directory: source
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --stacktrace :app:assembleRelease
+      - name: Verify package, signature and core libraries
+        run: |
+          set -euo pipefail
+          apk=source/app/build/outputs/apk/release/app-release.apk
+          test -s "$apk"
+          aapt="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n1)"
+          signer="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n1)"
+          "$aapt" dump badging "$apk" | tee badging.txt
+          grep -F "package: name='com.raully.nebularetro' versionCode='6' versionName='0.2.2'" badging.txt
+          "$signer" verify --verbose --print-certs "$apk" | tee signature.txt
+          grep -F 'ce3ebf1d972c09583470e184d9b86edd20eb4679fedc632d31ac9f58e8741fc8' signature.txt
+          python3 - "$apk" <<'PY'
+          import sys, zipfile
+          z=zipfile.ZipFile(sys.argv[1]); names=set(z.namelist())
+          abis={'arm64-v8a','armeabi-v7a','x86'}
+          cores={'libpcsx_rearmed_libretro_android.so','libppsspp_libretro_android.so'}
+          expected={f'lib/{a}/{c}' for a in abis for c in cores}
+          actual={n for n in names if n.startswith('lib/') and n.rsplit('/',1)[-1] in cores}
+          assert actual==expected,(expected,actual)
+          assert not any(n.startswith('lib/x86_64/') for n in names)
+          assert not any(n.lower().endswith(('.iso','.cso','.chd','.cue','.pbp','.rom')) for n in names)
+          print('Verified six PS1/PSP core binaries for three ABIs.')
+          PY
+          mkdir -p release-assets
+          cp "$apk" release-assets/Nebula-Retro-v0.2.2.apk
+          cp nebula-native-source-v022.zip release-assets/Nebula-Retro-source-v0.2.2.zip
+          sha256sum release-assets/Nebula-Retro-v0.2.2.apk | tee release-assets/SHA256SUMS.txt
+          stat -c 'APK_SIZE_BYTES=%s' release-assets/Nebula-Retro-v0.2.2.apk > release-assets/BUILD_INFO.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nebula-retro-v0.2.2
+          path: release-assets/*
+          if-no-files-found: error
+          retention-days: 90
+      - name: Publish verified v0.2.2
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.2.2
+          name: Nébula Retro v0.2.2 — importação opcional de BIOS PS1
+          body: |
+            Esta versão permite importar uma BIOS de PS1 que o próprio usuário tenha obtido do seu console, para melhorar a compatibilidade de jogos. O APK não inclui BIOS, jogos ou firmware. Sem BIOS, o PCSX-ReARMed tenta HLE, mas alguns títulos podem ficar com a tela preta.
+
+            O app tem frontend próprio em Kotlin e integra os motores open-source PPSSPP (PSP) e PCSX-ReARMed (PS1). O primeiro uso do PSP precisa de internet para baixar assets auxiliares. Instalação e gameplay ainda não foram testadas em aparelho físico.
+          files: |
+            release-assets/Nebula-Retro-v0.2.2.apk
+            release-assets/Nebula-Retro-source-v0.2.2.zip
+            release-assets/SHA256SUMS.txt
+            release-assets/BUILD_INFO.txt
+          fail_on_unmatched_files: true
