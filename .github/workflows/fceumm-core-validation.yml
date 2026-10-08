@@ -17,8 +17,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/source"
-          test -s Nebula-16-FCEUmm-validation-source.tar.gz
-          tar -xzf Nebula-16-FCEUmm-validation-source.tar.gz -C "$RUNNER_TEMP/source"
+          test -s Nebula-16-FCEUmm-validation-source-r2.tar.gz
+          tar -xzf Nebula-16-FCEUmm-validation-source-r2.tar.gz -C "$RUNNER_TEMP/source"
           test -f "$RUNNER_TEMP/source/nebula-16/third_party/libretro-fceumm/LICENSE-GPL-2.0.txt"
           test -f "$RUNNER_TEMP/source/nebula-16/third_party/libretro-fceumm/UPSTREAM.md"
           test -f "$RUNNER_TEMP/source/nebula-16/app/src/main/assets/licenses/fceumm/COPYING"
@@ -45,8 +45,8 @@ jobs:
           make -C "$CORE" -f Makefile.libretro platform=unix HAVE_HDPACK=0
           python3 tests/make_homebrew_nrom.py "$RUNNER_TEMP/nebula-homebrew.nes"
           cc -O2 -I"$CORE/src/drivers/libretro/libretro-common/include" \
-            tests/libretro_nrom_smoke.c -L"$CORE" -Wl,-rpath,"$PWD/$CORE" \
-            -lfceumm_libretro -lm -o "$RUNNER_TEMP/libretro_nrom_smoke"
+            tests/libretro_nrom_smoke.c "$CORE/fceumm_libretro.so" -Wl,-rpath,"$PWD/$CORE" \
+            -lm -o "$RUNNER_TEMP/libretro_nrom_smoke"
           "$RUNNER_TEMP/libretro_nrom_smoke" "$RUNNER_TEMP/nebula-homebrew.nes" | tee "$RUNNER_TEMP/host-smoke.log"
       - name: Cross-build pinned FCEUmm core for Android ABIs
         working-directory: ${{ runner.temp }}/source/nebula-16
@@ -79,7 +79,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/validation-artifact"
           cp "$APK" "$RUNNER_TEMP/validation-artifact/Nebula-16-FCEUmm-validation-only.apk"
           cp "$RUNNER_TEMP/host-smoke.log" "$RUNNER_TEMP/validation-artifact/host-smoke.log"
-          cp "$GITHUB_WORKSPACE/Nebula-16-FCEUmm-validation-source.tar.gz" "$RUNNER_TEMP/validation-artifact/"
+          cp "$GITHUB_WORKSPACE/Nebula-16-FCEUmm-validation-source-r2.tar.gz" "$RUNNER_TEMP/validation-artifact/"
           sha256sum "$RUNNER_TEMP/validation-artifact"/* > "$RUNNER_TEMP/validation-artifact/SHA256SUMS.txt"
       - uses: actions/upload-artifact@v4
         with:
