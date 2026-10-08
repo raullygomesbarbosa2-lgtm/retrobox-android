@@ -1,15 +1,17 @@
-# Nébula Zero — prévia pública dos motores PS1 + PSP
+# Nébula Zero — prévia pública PS1 + PSP
 
-Projeto experimental separado do APK Nébula Retro 0.2.x. A meta é criar motores autorais para PS1 e PSP, sem reutilizar código, cores ou interfaces de outros emuladores.
+Projeto experimental independente do Nébula Retro 0.2.x. Os motores são implementações originais deste projeto; não incorporam núcleos, código ou interfaces de outros emuladores.
 
-## Estado publicado nesta prévia
+## Esta é uma prévia técnica, não um emulador jogável
 
-- **PS1:** parte da CPU MIPS R3000A/COP0; RAM/scratchpad parciais; leitor ISO-9660 que localiza SYSTEM.CNF/BOOT; carregador direto de PS-X EXE; GPU de software inicial com VRAM 1024×512, primitivas planas, amostragem de textura 4/8/15 bpp e transferência de pixels. A CPU já escreve nos registradores GP0/GP1 básicos.
-- **PSP:** primeira base Allegrex/MIPS com subconjunto de instruções, delay slots e exceções; RAM/scratchpad/EDRAM iniciais; leitor que extrai PSP_GAME/SYSDIR/EBOOT.BIN de ISO-9660; loader de ELF32 não criptografado para RAM.
-- **PSP ainda não inicia jogo:** EBOOT.BIN comercial normalmente exige descriptografia PRX, e isso, ELF/PRX loader, VFPU, GE, serviços de firmware, áudio e exibição ainda não estão implementados.
-- **APK:** não há build Android jogável nesta prévia. A imagem do PS1 ainda não está ligada a uma tela Android; o PSP ainda não produz imagem.
-- **Testes:** a CI pública compilou os dois módulos e aprovou as duas suítes após corrigir uma fixture de desvio do PS1. Execução aprovada: [GitHub Actions #3](https://github.com/raullygomesbarbosa2-lgtm/retrobox-android/actions/runs/37774972747).
+O app Android pode desenhar um padrão de teste da GPU de software própria do PS1 e examinar ISOs selecionadas. No PS1, localiza SYSTEM.CNF/BOOT e PS-X EXE, mas não inicia jogos. No PSP, extrai EBOOT.BIN, mas não carrega EBOOT/PRX comerciais criptografados. **Não roda jogos comerciais.**
 
-## Próximos passos e limites
+## Estado dos motores
 
-Ainda faltam a integração Android, barramentos completos, CD-ROM/UMD, DMA, temporização, áudio, GPU/GE completos, firmware HLE e testes reais. O objetivo é abrir imagens próprias de PS1 e PSP e desenhar os jogos na tela, mas compatibilidade universal não pode ser prometida. Esta prévia é apenas código, não um APK; não inclui jogos, ISOs, BIOS ou firmware.
+- **PS1:** implementação parcial própria de MIPS R3000A/COP0, RAM/scratchpad, loader PS-X EXE, leitor ISO-9660 e GPU 2D/3D inicial com primitivas/texturas e barramento GP0/GP1 básico. Ainda faltam HLE de BIOS, CD-ROM completo, áudio, temporização e renderizador Android de jogos.
+- **PSP:** implementação parcial própria de Allegrex/MIPS, RAM/EDRAM, leitor ISO-9660 e loader de ELF32 não criptografado. Ainda faltam descriptografia e carregamento de PRX, VFPU, GE, HLE de firmware, áudio e gameplay.
+- Não acompanha BIOS, firmware, jogos ou ISOs.
+
+## Build
+
+O workflow do GitHub Actions executa os testes de PS1/PSP e compila o APK debug do app Android. Os testes dos núcleos passaram no run #4; a compilação Android desta versão depende da execução disparada pela publicação do arquivo de prévia. Só haverá APK para baixar se essa execução terminar com sucesso.
