@@ -1,0 +1,30 @@
+name: Test Nébula Zero PS1 and PSP preview
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Nebula-Zero-PS1-PSP-preview.zip'
+      - '.github/workflows/nebula-zero-preview-tests.yml'
+  workflow_dispatch:
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Extract source preview
+        run: |
+          mkdir -p preview
+          unzip -q Nebula-Zero-PS1-PSP-preview.zip -d preview
+          test -f preview/Nebula-Zero/settings.gradle.kts
+      - name: Run both core test suites
+        working-directory: preview/Nebula-Zero
+        run: gradle --no-daemon :psx-core:test :psp-core:test
