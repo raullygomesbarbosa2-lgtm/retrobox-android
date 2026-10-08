@@ -82,7 +82,7 @@ jobs:
             unzip -Z1 "$apk" | grep -Fx "lib/$abi/libppsspp_libretro_android.so"
           done
           if unzip -Z1 "$apk" | grep -q '^lib/x86_64/'; then
-            echo 'Unexpected x86_64 libraries: this build deliberately excludes x86_64 because the pinned PPSSPP file is empty.' >&2
+            echo 'Unexpected x86_64 libraries: this build excludes x86_64 because the pinned PPSSPP file is empty.' >&2
             exit 1
           fi
           mkdir -p release-assets
