@@ -8,7 +8,7 @@ Projeto experimental separado do APK Nébula Retro 0.2.x. A meta é criar motore
 - **PSP:** primeira base Allegrex/MIPS com subconjunto de instruções, delay slots e exceções; RAM/scratchpad/EDRAM iniciais; leitor que extrai PSP_GAME/SYSDIR/EBOOT.BIN de ISO-9660; loader de ELF32 não criptografado para RAM.
 - **PSP ainda não inicia jogo:** EBOOT.BIN comercial normalmente exige descriptografia PRX, e isso, ELF/PRX loader, VFPU, GE, serviços de firmware, áudio e exibição ainda não estão implementados.
 - **APK:** não há build Android jogável nesta prévia. A imagem do PS1 ainda não está ligada a uma tela Android; o PSP ainda não produz imagem.
-- **Testes:** a CI pública compilou os dois módulos. A suíte PSP passou; na suíte PS1, 17 de 18 testes passaram. O teste restante usava endereço-alvo incorreto; a fixture foi corrigida para validar o delay slot e o salto. Uma nova execução da CI foi iniciada após a atualização da prévia.
+- **Testes:** a CI pública compilou os dois módulos e aprovou as duas suítes após corrigir uma fixture de desvio do PS1. Execução aprovada: [GitHub Actions #3](https://github.com/raullygomesbarbosa2-lgtm/retrobox-android/actions/runs/37774972747).
 
 ## Próximos passos e limites
 
