@@ -14,4 +14,4 @@ O app Android pode desenhar um padrão de teste da GPU de software própria do P
 
 ## Build
 
-O workflow do GitHub Actions executa os testes de PS1/PSP e compila o APK debug do app Android. Os testes dos núcleos passaram no run #4; a compilação Android desta versão depende da execução disparada pela publicação do arquivo de prévia. Só haverá APK para baixar se essa execução terminar com sucesso.
+O workflow do GitHub Actions executa os testes de PS1/PSP e compila o APK debug do app Android. Os testes dos núcleos passaram no run #4. A primeira tentativa do build Android apontou uma configuração ausente do repositório Google Maven; ela foi corrigida e a nova execução precisa terminar com sucesso antes de haver um APK para baixar.
