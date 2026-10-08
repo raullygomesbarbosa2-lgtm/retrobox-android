@@ -73,9 +73,8 @@ jobs:
           emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect
           disable-animations: true
           script: |
-            cd "$RUNNER_TEMP/source/nebula-16"
             set +e
-            gradle --no-daemon :app:connectedDebugAndroidTest
+            gradle --no-daemon -p "${{ runner.temp }}/source/nebula-16" :app:connectedDebugAndroidTest
             TEST_STATUS=$?
             adb devices -l > "$RUNNER_TEMP/android-emulator-devices.txt" 2>&1
             adb shell getprop > "$RUNNER_TEMP/android-emulator-properties.txt" 2>&1
